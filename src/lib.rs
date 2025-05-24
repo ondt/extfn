@@ -1,11 +1,12 @@
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::{ToTokens, format_ident, quote};
 use std::mem;
 use syn::spanned::Spanned;
+use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
 use syn::{
-    Error, FnArg, GenericParam, Generics, ItemFn, Receiver, Result, Type, TypeParam,
-    parse_macro_input, parse_quote, visit_mut,
+    Error, FnArg, GenericParam, Generics, ItemFn, Lifetime, Receiver, Result, Type, TypeArray,
+    TypeParam, TypePath, parse_macro_input, parse_quote, visit, visit_mut,
 };
 
 #[proc_macro_attribute]
@@ -43,7 +44,8 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
     let mut self_type = *mem::replace(&mut self_param.ty, parse_quote!(Self));
     self_param.colon_token = None;
 
-    let mut generics = mem::take(&mut function.sig.generics); // TODO: take only generics mentioned in `self`
+    // extract all generics used in `self_type`
+    let mut generics = extract_impl_generics(&self_type, &mut function.sig.generics);
 
     // convert `impl Trait` into `T: Trait`
     ImplTraitsIntoGenerics::new(&mut generics).visit_type_mut(&mut self_type);
@@ -74,20 +76,88 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
 
     let trait_name = format_ident!("{}", function.sig.ident.to_string());
 
-    let (impl_generics, _ty_generics, where_clause) = generics.split_for_impl();
+    let (impl_generics, ty_generics, _where_clause) = generics.split_for_impl();
 
     // TODO: seal
     let expanded = quote! {
-        trait #trait_name {
+        trait #trait_name #impl_generics {
             #declaration;
         }
 
-        impl #impl_generics #trait_name for #self_type  #where_clause {
+        impl #impl_generics #trait_name #ty_generics for #self_type {
             #function
         }
     };
 
     Ok(expanded)
+}
+
+/// Extract all generics from `generics` that are used in `ty`.
+fn extract_impl_generics(ty: &Type, generics: &mut Generics) -> Generics {
+    let fn_generic_params = mem::take(&mut generics.params);
+    let mut extracted = Generics::default();
+    let mut leftovers = Generics::default();
+
+    for pair in fn_generic_params.into_pairs() {
+        if type_uses_generic_param(ty, pair.value()) {
+            extracted.params.extend([pair]);
+        } else {
+            leftovers.params.extend([pair]);
+        }
+    }
+
+    // pop trailing commas
+    extracted.params.pop_punct();
+    leftovers.params.pop_punct();
+
+    generics.params = leftovers.params;
+    extracted
+}
+
+fn type_uses_generic_param(ty: &Type, generic_param: &GenericParam) -> bool {
+    let mut visitor = FindGenericParam::new(generic_param);
+    visitor.visit_type(ty);
+    visitor.found
+}
+
+struct FindGenericParam<'gp> {
+    generic_param: &'gp GenericParam,
+    found: bool,
+}
+
+impl<'gp> FindGenericParam<'gp> {
+    pub fn new(generic_param: &'gp GenericParam) -> Self {
+        Self {
+            generic_param,
+            found: false,
+        }
+    }
+}
+
+impl<'ast, 'gp> Visit<'ast> for FindGenericParam<'gp> {
+    // lifetime generics
+    fn visit_lifetime(&mut self, node: &'ast Lifetime) {
+        if let GenericParam::Lifetime(lifetime_param) = self.generic_param {
+            self.found |= lifetime_param.lifetime.ident == node.ident;
+        }
+        visit::visit_lifetime(self, node);
+    }
+
+    // const generics
+    fn visit_type_array(&mut self, node: &'ast TypeArray) {
+        if let GenericParam::Const(const_param) = self.generic_param {
+            self.found |= const_param.ident == node.len.to_token_stream().to_string();
+        }
+        visit::visit_type_array(self, node);
+    }
+
+    // type generics
+    fn visit_type_path(&mut self, node: &'ast TypePath) {
+        if let GenericParam::Type(type_param) = self.generic_param {
+            self.found |= type_param.ident == node.to_token_stream().to_string();
+        }
+        visit::visit_type_path(self, node);
+    }
 }
 
 struct ImplTraitsIntoGenerics<'g> {

@@ -1,6 +1,7 @@
 //! This module checks if various forms of `#[extfn]` can be expanded and compiled.
 
 #![allow(unused_mut)]
+#![allow(clippy::needless_lifetimes)]
 
 use extfn::extfn;
 
@@ -85,7 +86,7 @@ fn multi_generic<T, U, V>(self: (T, U, V)) {
 }
 
 #[extfn]
-fn const_generic<T, const N: usize>(self: [T; N]) {
+fn const_generic<T: Sync, const N: usize>(self: [T; N]) {
     unimplemented!()
 }
 
@@ -111,5 +112,42 @@ fn complex_impl_trait_ref(self: &mut impl Ord) -> Self {
 
 #[extfn]
 fn complex_impl_trait_multi(self: Result<impl Ord, impl Eq>) -> Self {
+    unimplemented!()
+}
+
+#[extfn]
+fn second_generic_lifetime<'a, T: Ord>(self: T, _second: &'a str) {
+    unimplemented!()
+}
+
+#[extfn]
+fn second_generic_const<T: Ord, const N: usize>(self: T, _second: [(); N]) {
+    unimplemented!()
+}
+
+#[extfn]
+fn second_generic_type<T: Ord, U: Eq>(self: T, _second: U) {
+    unimplemented!()
+}
+
+#[extfn]
+fn complex_where_clause_with_second_generic<'s, T, U>(self: Box<&'s T>, _second: &'s U)
+where
+    T: Clone,
+    T: 's,
+    Result<&'s T, &'s U>: Clone,
+    String: AsRef<&'s T>,
+    for<'a> &'a str: AsRef<U>,
+{
+    unimplemented!()
+}
+
+#[extfn]
+fn same_generic_twice<T>(self: T, _second: T) {
+    unimplemented!()
+}
+
+#[extfn]
+fn generic_under_impl_trait<E: Eq>(self: impl From<E>) {
     unimplemented!()
 }
