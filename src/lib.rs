@@ -3,7 +3,8 @@ use quote::{format_ident, quote};
 use std::mem;
 use syn::spanned::Spanned;
 use syn::{
-    Error, FnArg, GenericParam, ItemFn, Result, Type, TypeParam, parse_macro_input, parse_quote,
+    Error, FnArg, GenericParam, ItemFn, Receiver, Result, Type, TypeParam, parse_macro_input,
+    parse_quote,
 };
 
 #[proc_macro_attribute]
@@ -57,7 +58,30 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
         }));
     };
 
-    let declaration = function.sig.clone();
+    let mut declaration = function.sig.clone();
+
+    // remove patterns from param names in the trait method declaration
+    *declaration.inputs.first_mut().unwrap() = FnArg::Receiver(Receiver {
+        attrs: vec![],
+        reference: None,
+        mutability: None,
+        self_token: Default::default(),
+        colon_token: None,
+        ty: Box::new(parse_quote!(Self)),
+    });
+    declaration
+        .inputs
+        .iter_mut()
+        .skip(1)
+        .enumerate()
+        .for_each(|(index, arg)| match arg {
+            FnArg::Receiver(_) => unreachable!(),
+            FnArg::Typed(param) => {
+                let ident = format_ident!("dummy{index}");
+                param.pat = Box::new(parse_quote!(#ident))
+            }
+        });
+
     let trait_name = format_ident!("{}", function.sig.ident.to_string());
 
     let (impl_generics, _ty_generics, where_clause) = generics.split_for_impl();
