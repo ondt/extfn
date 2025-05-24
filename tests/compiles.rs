@@ -16,7 +16,7 @@ fn doc(self: bool) -> bool {
 }
 
 #[extfn]
-#[must_use]
+#[inline]
 fn attribute(self: bool) -> bool {
     unimplemented!()
 }
