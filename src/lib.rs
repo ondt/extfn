@@ -2,9 +2,10 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use std::mem;
 use syn::spanned::Spanned;
+use syn::visit_mut::VisitMut;
 use syn::{
-    Error, FnArg, GenericParam, ItemFn, Receiver, Result, Type, TypeParam, parse_macro_input,
-    parse_quote,
+    Error, FnArg, GenericParam, Generics, ItemFn, Receiver, Result, Type, TypeParam,
+    parse_macro_input, parse_quote, visit_mut,
 };
 
 #[proc_macro_attribute]
@@ -45,18 +46,7 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
     let mut generics = mem::take(&mut function.sig.generics); // TODO: take only generics mentioned in `self`
 
     // convert `impl Trait` into `T: Trait`
-    if let Type::ImplTrait(impl_trait) = self_type.clone() {
-        let ident = format_ident!("__extfn_IMPL");
-        self_type = parse_quote!(#ident);
-        generics.params.push(GenericParam::Type(TypeParam {
-            attrs: vec![],
-            ident,
-            colon_token: None,
-            bounds: impl_trait.bounds.clone(),
-            eq_token: None,
-            default: None,
-        }));
-    };
+    ImplTraitsIntoGenerics::new(&mut generics).visit_type_mut(&mut self_type);
 
     let mut declaration = function.sig.clone();
 
@@ -98,4 +88,38 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
     };
 
     Ok(expanded)
+}
+
+struct ImplTraitsIntoGenerics<'g> {
+    generics: &'g mut Generics,
+    counter: usize,
+}
+
+impl<'g> ImplTraitsIntoGenerics<'g> {
+    fn new(generics: &'g mut Generics) -> Self {
+        Self {
+            generics,
+            counter: 0,
+        }
+    }
+}
+
+impl VisitMut for ImplTraitsIntoGenerics<'_> {
+    fn visit_type_mut(&mut self, node: &mut Type) {
+        if let Type::ImplTrait(impl_trait) = node.clone() {
+            self.counter += 1;
+            let ident = format_ident!("_T{}", self.counter);
+            *node = parse_quote!(#ident);
+            self.generics.params.push(GenericParam::Type(TypeParam {
+                attrs: vec![],
+                ident,
+                colon_token: None,
+                bounds: impl_trait.bounds,
+                eq_token: None,
+                default: None,
+            }));
+        };
+
+        visit_mut::visit_type_mut(self, node);
+    }
 }

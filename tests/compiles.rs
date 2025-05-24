@@ -103,3 +103,13 @@ unsafe fn unsafe_fn(self: bool) {
 fn impl_trait_with_nested_ref<'a>(self: impl IntoIterator<Item = &'a String>) {
     unimplemented!()
 }
+
+#[extfn]
+fn complex_impl_trait_ref(self: &mut impl Ord) -> Self {
+    unimplemented!()
+}
+
+#[extfn]
+fn complex_impl_trait_multi(self: Result<impl Ord, impl Eq>) -> Self {
+    unimplemented!()
+}
