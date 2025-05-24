@@ -2,6 +2,7 @@
 
 #![allow(unused_mut)]
 #![allow(clippy::needless_lifetimes)]
+#![deny(warnings)]
 
 use extfn::extfn;
 
@@ -149,5 +150,30 @@ fn same_generic_twice<T>(self: T, _second: T) {
 
 #[extfn]
 fn generic_under_impl_trait<E: Eq>(self: impl From<E>) {
+    unimplemented!()
+}
+
+#[extfn]
+fn lifetime_unelided<'a, T>(self: &'a T) -> &'a T {
+    unimplemented!()
+}
+
+#[extfn]
+fn lifetime_elided<T>(self: &T) -> &T {
+    unimplemented!()
+}
+
+#[extfn]
+fn lifetime_elided_multi<T>(self: &T, _second: &T) -> &T {
+    unimplemented!()
+}
+
+#[extfn]
+fn extra_paren_1<T>(#[allow(warnings)] self: (((((&T)))))) -> &T {
+    unimplemented!()
+}
+
+#[extfn]
+fn extra_paren_2(self: &(impl Sync + 'static)) -> &str {
     unimplemented!()
 }

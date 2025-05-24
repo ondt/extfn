@@ -5,8 +5,8 @@ use syn::spanned::Spanned;
 use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
 use syn::{
-    Error, FnArg, GenericParam, Generics, ItemFn, Lifetime, Receiver, Result, Type, TypeArray,
-    TypeParam, TypePath, parse_macro_input, parse_quote, visit, visit_mut,
+    Error, FnArg, GenericParam, Generics, ItemFn, Lifetime, Result, Type, TypeArray, TypeParam,
+    TypePath, parse_macro_input, parse_quote, visit, visit_mut,
 };
 
 #[proc_macro_attribute]
@@ -40,9 +40,15 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
         ));
     }
 
-    // take the type from `self`
-    let mut self_type = *mem::replace(&mut self_param.ty, parse_quote!(Self));
-    self_param.colon_token = None;
+    // take the type `T` from `self: T` or `self: &T`
+    let mut dest_type = self_param.ty.as_mut();
+    while let Type::Paren(paren) = dest_type {
+        dest_type = paren.elem.as_mut(); // skip parenthesis
+    }
+    if let Type::Reference(reference) = dest_type {
+        dest_type = reference.elem.as_mut(); // skip reference
+    };
+    let mut self_type = mem::replace(dest_type, parse_quote!(Self));
 
     // extract all generics used in `self_type`
     let mut generics = extract_impl_generics(&self_type, &mut function.sig.generics);
@@ -50,27 +56,26 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
     // convert `impl Trait` into `T: Trait`
     ImplTraitsIntoGenerics::new(&mut generics).visit_type_mut(&mut self_type);
 
+    // strip extra parenthesis that might've had a purpose earlier
+    while let Type::Paren(paren) = self_type {
+        self_type = *paren.elem;
+    }
+
     let mut declaration = function.sig.clone();
 
     // remove patterns from param names in the trait method declaration
-    *declaration.inputs.first_mut().unwrap() = FnArg::Receiver(Receiver {
-        attrs: vec![],
-        reference: None,
-        mutability: None,
-        self_token: Default::default(),
-        colon_token: None,
-        ty: Box::new(parse_quote!(Self)),
-    });
     declaration
         .inputs
         .iter_mut()
-        .skip(1)
         .enumerate()
         .for_each(|(index, arg)| match arg {
-            FnArg::Receiver(_) => unreachable!(),
-            FnArg::Typed(param) => {
+            FnArg::Receiver(receiver) => {
+                receiver.reference = None;
+                receiver.mutability = None;
+            }
+            FnArg::Typed(typed) => {
                 let ident = format_ident!("dummy{index}");
-                param.pat = Box::new(parse_quote!(#ident))
+                typed.pat = parse_quote!(#ident)
             }
         });
 
@@ -81,10 +86,12 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
     // TODO: seal
     let expanded = quote! {
         trait #trait_name #impl_generics {
+            #[expect(clippy::needless_arbitrary_self_type)]
             #declaration;
         }
 
         impl #impl_generics #trait_name #ty_generics for #self_type {
+            #[expect(clippy::needless_arbitrary_self_type)]
             #function
         }
     };
