@@ -12,6 +12,11 @@ fn trivial(self: bool) -> bool {
 }
 
 #[extfn]
+pub fn visibility(self: bool) {
+    unimplemented!()
+}
+
+#[extfn]
 /// doc
 fn doc(self: bool) -> bool {
     unimplemented!()

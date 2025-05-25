@@ -6,7 +6,7 @@ use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
 use syn::{
     Error, FnArg, GenericParam, Generics, ItemFn, Lifetime, Result, Type, TypeArray, TypeParam,
-    TypePath, parse_macro_input, parse_quote, visit, visit_mut,
+    TypePath, Visibility, parse_macro_input, parse_quote, visit, visit_mut,
 };
 
 #[proc_macro_attribute]
@@ -61,6 +61,8 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
         self_type = *paren.elem;
     }
 
+    let vis = mem::replace(&mut function.vis, Visibility::Inherited);
+
     let mut declaration = function.sig.clone();
 
     // remove patterns from param names in the trait method declaration
@@ -85,7 +87,7 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
 
     // TODO: seal
     let expanded = quote! {
-        trait #trait_name #impl_generics {
+        #vis trait #trait_name #impl_generics {
             #[expect(clippy::needless_arbitrary_self_type)]
             #declaration;
         }
