@@ -1,4 +1,5 @@
 use extfn::extfn;
+use std::cmp::Ordering;
 use std::fmt::Display;
 
 #[extfn]
@@ -12,13 +13,13 @@ fn string_len(self: impl Display) -> usize {
 }
 
 #[extfn]
-fn sorted<T: Ord>(mut self: Vec<T>) -> Self {
-    self.sort();
+fn sorted_by<T: Ord>(mut self: Vec<T>, f: impl FnMut(&T, &T) -> Ordering) -> Vec<T> {
+    self.sort_by(f);
     self
 }
 
 fn main() {
     assert_eq!(1.add1(), 2);
     assert_eq!(true.string_len(), 4);
-    assert_eq!(vec![3, 1, 2].sorted(), vec![1, 2, 3]);
+    assert_eq!(vec![2, 1, 3].sorted_by(|a, b| b.cmp(a)), vec![3, 2, 1]);
 }
