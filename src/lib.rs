@@ -233,6 +233,8 @@ impl<'g> ImplTraitsIntoGenerics<'g> {
 
 impl VisitMut for ImplTraitsIntoGenerics<'_> {
     fn visit_type_mut(&mut self, node: &mut Type) {
+        visit_mut::visit_type_mut(self, node);
+
         if let Type::ImplTrait(impl_trait) = node.clone() {
             self.counter += 1;
             let ident = format_ident!("_T{}", self.counter);
@@ -246,7 +248,5 @@ impl VisitMut for ImplTraitsIntoGenerics<'_> {
                 default: None,
             }));
         };
-
-        visit_mut::visit_type_mut(self, node);
     }
 }

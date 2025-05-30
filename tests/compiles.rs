@@ -190,3 +190,8 @@ fn nested_generics<'a, E: Eq + 'a, F: for<'f> From<[&'f &'a E; N]>, const N: usi
 ) {
     unimplemented!()
 }
+
+#[extfn]
+fn nested_impl_trait(self: impl Iterator<Item = impl Fn(i32)>) {
+    unimplemented!()
+}
