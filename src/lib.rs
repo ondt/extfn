@@ -53,16 +53,19 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
     };
     let mut self_type = mem::replace(dest_type, parse_quote!(Self));
 
-    move_bounds_to_where_clause(
-        &mut function.sig.generics.params,
-        &mut function.sig.generics.where_clause,
-    );
-
-    // extract all generics used in `self_type`
-    let mut generics = extract_impl_generics(&self_type, &mut function.sig.generics);
+    let mut generics = Generics::default();
 
     // convert `impl Trait` into `T: Trait`
     ImplTraitsIntoGenerics::new(&mut generics).visit_type_mut(&mut self_type);
+
+    // extract all generics used in `self_type`
+    let extracted_generics = extract_impl_generics(&self_type, &mut function.sig.generics);
+    generics.params.extend(extracted_generics.params);
+
+    move_bounds_to_where_clause(
+        &mut generics.params,
+        &mut function.sig.generics.where_clause,
+    );
 
     // strip extra parenthesis that might've had a purpose earlier
     while let Type::Paren(paren) = self_type {
