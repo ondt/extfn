@@ -182,3 +182,11 @@ fn extra_paren_1<T>(#[allow(warnings)] self: (((((&T)))))) -> &T {
 fn extra_paren_2(self: &(impl Sync + 'static)) -> &str {
     unimplemented!()
 }
+
+#[extfn]
+fn nested_generics<'a, E: Eq + 'a, F: for<'f> From<[&'f &'a E; N]>, const N: usize>(
+    self: F,
+    _second: E,
+) {
+    unimplemented!()
+}

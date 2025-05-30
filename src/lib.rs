@@ -1,12 +1,15 @@
 use proc_macro::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use std::mem;
+use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
+use syn::token::Comma;
 use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
 use syn::{
-    Error, FnArg, GenericParam, Generics, ItemFn, Lifetime, Result, Type, TypeArray, TypeParam,
-    TypePath, Visibility, parse_macro_input, parse_quote, visit, visit_mut,
+    Error, FnArg, GenericParam, Generics, ItemFn, Lifetime, PredicateLifetime, PredicateType,
+    Result, Type, TypeArray, TypeParam, TypePath, Visibility, WhereClause, WherePredicate,
+    parse_macro_input, parse_quote, visit, visit_mut,
 };
 
 #[proc_macro_attribute]
@@ -49,6 +52,11 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
         dest_type = reference.elem.as_mut(); // skip reference
     };
     let mut self_type = mem::replace(dest_type, parse_quote!(Self));
+
+    move_bounds_to_where_clause(
+        &mut function.sig.generics.params,
+        &mut function.sig.generics.where_clause,
+    );
 
     // extract all generics used in `self_type`
     let mut generics = extract_impl_generics(&self_type, &mut function.sig.generics);
@@ -99,6 +107,43 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
     };
 
     Ok(expanded)
+}
+
+fn move_bounds_to_where_clause(
+    params: &mut Punctuated<GenericParam, Comma>,
+    where_clause: &mut Option<WhereClause>,
+) {
+    let where_predicates = params
+        .iter_mut()
+        .filter_map(|generic_param| match generic_param {
+            GenericParam::Lifetime(lifetime_param) if !lifetime_param.bounds.is_empty() => {
+                Some(WherePredicate::Lifetime(PredicateLifetime {
+                    lifetime: lifetime_param.lifetime.clone(),
+                    colon_token: Default::default(),
+                    bounds: mem::take(&mut lifetime_param.bounds),
+                }))
+            }
+            GenericParam::Type(type_param) if !type_param.bounds.is_empty() => {
+                Some(WherePredicate::Type(PredicateType {
+                    lifetimes: None,
+                    bounded_ty: {
+                        let ident = &type_param.ident;
+                        parse_quote!(#ident)
+                    },
+                    colon_token: Default::default(),
+                    bounds: mem::take(&mut type_param.bounds),
+                }))
+            }
+            GenericParam::Lifetime(_) | GenericParam::Type(_) | GenericParam::Const(_) => None,
+        });
+
+    where_clause
+        .get_or_insert_with(|| WhereClause {
+            where_token: Default::default(),
+            predicates: Punctuated::new(),
+        })
+        .predicates
+        .extend(where_predicates);
 }
 
 /// Extract all generics from `generics` that are used in `ty`.
