@@ -67,6 +67,11 @@ fn reference<T>(self: &Option<&T>) {
 }
 
 #[extfn]
+fn ref_mut<T>(self: &mut Option<&T>) {
+    unimplemented!()
+}
+
+#[extfn]
 fn lifetime<'a, 'b, T>(self: &'a Option<&'b T>) {
     unimplemented!()
 }

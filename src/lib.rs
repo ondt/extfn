@@ -8,8 +8,8 @@ use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
 use syn::{
     Error, FnArg, GenericParam, Generics, ItemFn, Lifetime, PredicateLifetime, PredicateType,
-    Result, Type, TypeArray, TypeParam, TypePath, Visibility, WhereClause, WherePredicate,
-    parse_macro_input, parse_quote, visit, visit_mut,
+    Receiver, Result, Type, TypeArray, TypeParam, TypePath, Visibility, WhereClause,
+    WherePredicate, parse_macro_input, parse_quote, visit, visit_mut,
 };
 
 #[proc_macro_attribute]
@@ -53,6 +53,8 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
     };
     let mut self_type = mem::replace(dest_type, parse_quote!(Self));
 
+    simplify_self_param(self_param);
+
     let mut generics = Generics::default();
 
     // convert `impl Trait` into `T: Trait`
@@ -83,8 +85,9 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
         .enumerate()
         .for_each(|(index, arg)| match arg {
             FnArg::Receiver(receiver) => {
-                receiver.reference = None;
-                receiver.mutability = None;
+                if receiver.reference.is_none() {
+                    receiver.mutability = None;
+                }
             }
             FnArg::Typed(typed) => {
                 let ident = format_ident!("dummy{index}");
@@ -96,20 +99,27 @@ fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
 
     let (impl_generics, ty_generics, _where_clause) = generics.split_for_impl();
 
-    // TODO: seal
     let expanded = quote! {
         #vis trait #trait_name #impl_generics {
-            #[expect(clippy::needless_arbitrary_self_type)]
             #declaration;
         }
 
         impl #impl_generics #trait_name #ty_generics for #self_type {
-            #[expect(clippy::needless_arbitrary_self_type)]
             #function
         }
     };
 
     Ok(expanded)
+}
+
+fn simplify_self_param(self_param: &mut Receiver) {
+    self_param.colon_token = None;
+    if let Type::Reference(ty) = *self_param.ty.clone() {
+        if ty.elem == parse_quote!(Self) {
+            self_param.reference = Some((ty.and_token, ty.lifetime));
+            self_param.mutability = ty.mutability;
+        }
+    }
 }
 
 fn move_bounds_to_where_clause(
