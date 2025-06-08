@@ -1,4 +1,4 @@
-use proc_macro::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, format_ident, quote};
 use std::mem;
 use syn::punctuated::Punctuated;
@@ -9,18 +9,29 @@ use syn::visit_mut::VisitMut;
 use syn::{
     Error, FnArg, GenericParam, Generics, ItemFn, Lifetime, PredicateLifetime, PredicateType,
     Receiver, Result, Type, TypeArray, TypeParam, TypePath, Visibility, WhereClause,
-    WherePredicate, parse_macro_input, parse_quote, visit, visit_mut,
+    WherePredicate, parse_quote, visit, visit_mut,
 };
 
 #[proc_macro_attribute]
-pub fn extfn(_attr: TokenStream, input: TokenStream) -> TokenStream {
-    let function = parse_macro_input!(input as ItemFn);
-    expand(function)
+pub fn extfn(
+    attr: proc_macro::TokenStream,
+    input: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    expand(attr.into(), input.into())
         .unwrap_or_else(Error::into_compile_error)
         .into()
 }
 
-fn expand(mut function: ItemFn) -> Result<proc_macro2::TokenStream> {
+fn expand(attr: TokenStream, input: TokenStream) -> Result<TokenStream> {
+    if !attr.is_empty() {
+        return Err(Error::new(
+            Span::call_site(),
+            "attribute arguments are not allowed",
+        ));
+    }
+
+    let mut function = syn::parse2::<ItemFn>(input)?;
+
     let first_param = function.sig.inputs.first_mut().ok_or(Error::new(
         function.sig.paren_token.span.span(),
         "function must have a parameter named `self`",
