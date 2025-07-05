@@ -10,6 +10,14 @@ homepage = "https://github.com/ondt/extfn"
 documentation = "https://docs.rs/extfn"
 license = "MIT"
 readme = "README.md"
+include = [
+	"examples/demo.rs",
+	"src/lib.rs",
+	"tests/compiles.rs",
+	"Cargo.toml",
+	"LICENSE",
+	"README.md",
+]
 
 [lib]
 proc-macro = true
