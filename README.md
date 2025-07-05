@@ -97,8 +97,8 @@ fn main() {
 
 ## Supported Function Signatures
 
-A list of all supported function signatures can be found [here](tests/compiles.rs). Nearly everything I could think of
-is supported, with a few exceptions (see [Fine Print](#fine-print)).
+A list of all supported function signatures can be found in [tests/signatures.rs](tests/signatures.rs). Nearly
+everything I could think of is supported, with a few exceptions (see [Fine Print](#fine-print)).
 
 Please report any edge cases where the "extfn transform" (add `#[extfn]` and rename the first parameter to `self`)
 doesn't work.

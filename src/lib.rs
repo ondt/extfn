@@ -22,10 +22,10 @@ use syn::{
 /// ```
 ///
 /// <details>
-/// <summary>All supported function forms</summary>
+/// <summary>All supported function signatures</summary>
 ///
 /// ```
-#[doc = include_str!("../tests/compiles.rs")]
+#[doc = include_str!("../tests/signatures.rs")]
 /// ```
 /// </details>
 #[proc_macro_attribute]
