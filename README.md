@@ -92,21 +92,52 @@ fn main() {
     assert_eq!(vec![2, 1, 3].sorted_by(|a, b| b.cmp(a)), vec![3, 2, 1]);
 }
 ```
+
 </details>
 
 ## Supported Function Signatures
 
-A list of all supported function signatures can be found [here](tests/compiles.rs).
+A list of all supported function signatures can be found [here](tests/compiles.rs). Nearly everything I could think of
+is supported, with a few exceptions (see [Fine Print](#fine-print)).
+
+Please report any edge cases where the "extfn transform" (add `#[extfn]` and rename the first parameter to `self`)
+doesn't work.
+
+## Implementation Details
+
+The `#[extfn]` macro essentially just converts a function into an extension trait with a single method.
+
+This trait shares it's name with the extension function, allowing us to mark extension functions as `pub` and to import
+them just like regular functions using `use example::add1;`, maintaining the illusion:
+
+```rust
+mod example {
+    use extfn::extfn;
+    
+    #[extfn]
+    pub fn add1(self: usize) -> usize {
+        self + 1
+    }
+}
+
+use example::add1;
+
+fn main() {
+    assert_eq!(1.add1(), 2);
+}
+```
 
 ## Prior Art
 
-Extension functions are already implemented in [Kotlin](https://kotlinlang.org/docs/extensions.html#extension-functions)
-and [C#](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/extension-methods).
+Extension functions are already implemented in other programming languages:
+
+- [Extension functions in Kotlin](https://kotlinlang.org/docs/extensions.html#extension-functions)
+- [Extension methods in C#](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/extension-methods)
 
 As a Rust feature, extension functions have been proposed
 [here](https://internals.rust-lang.org/t/idea-simpler-method-syntax-private-helpers/7460),
 [here](https://internals.rust-lang.org/t/idea-trait-impl-item-for-ergonomic-extension-traits/12891/4),
-[here](https://internals.rust-lang.org/t/postfix-functions/18540), and
+[here](https://internals.rust-lang.org/t/postfix-functions/18540),
 [here](https://internals.rust-lang.org/t/weird-syntax-idea-s-for-umcs/19200).
 
 ## Fine Print
