@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, format_ident, quote};
 use std::mem;
@@ -12,6 +14,20 @@ use syn::{
     WherePredicate, parse_quote, visit, visit_mut,
 };
 
+/// Converts a regular function into an extension function.
+///
+/// # Examples
+/// ```
+#[doc = include_str!("../examples/demo.rs")]
+/// ```
+///
+/// <details>
+/// <summary>All supported function forms</summary>
+///
+/// ```
+#[doc = include_str!("../tests/compiles.rs")]
+/// ```
+/// </details>
 #[proc_macro_attribute]
 pub fn extfn(
     attr: proc_macro::TokenStream,

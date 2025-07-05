@@ -2,6 +2,14 @@
 name = "extfn"
 version = "0.1.0"
 edition = "2024"
+categories = ["rust-patterns"]
+keywords = ["macro", "trait", "extension", "extension-functions"]
+description = "Call any freestanding function as `a.foo(b)` instead of `foo(a, b)` just by adding `#[extfn]` and renaming the first parameter to `self`."
+repository = "https://github.com/ondt/extfn"
+homepage = "https://github.com/ondt/extfn"
+documentation = "https://docs.rs/extfn"
+license = "MIT"
+readme = "README.md"
 
 [lib]
 proc-macro = true
