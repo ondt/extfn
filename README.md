@@ -1,5 +1,9 @@
 # `extfn` - Extension Functions in Rust
 
+[![Latest version](https://img.shields.io/crates/v/extfn.svg)](https://crates.io/crates/extfn)
+[![Documentation](https://docs.rs/extfn/badge.svg)](https://docs.rs/extfn)
+![License](https://img.shields.io/crates/l/extfn.svg)
+
 `extfn` is a Rust library that implements _extension functions_, allowing any[*](#fine-print) freestanding function to
 be called as `a.foo(b)` instead of `foo(a, b)` just by adding `#[extfn]` and renaming the first parameter to `self`.
 
