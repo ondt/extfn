@@ -38,7 +38,65 @@ fn main() {
 }
 ```
 
-A list of all supported function forms can be found [here](tests/compiles.rs).
+<details>
+<summary>Click here to expand macros</summary>
+
+```rust
+use extfn::extfn;
+use std::cmp::Ordering;
+use std::fmt::Display;
+
+trait factorial {
+    fn factorial(self) -> u64;
+}
+impl factorial for u64 {
+    fn factorial(self) -> u64 {
+        (1..=self).product()
+    }
+}
+
+trait string_len<_T1> {
+    fn string_len(self) -> usize
+    where
+        _T1: Display;
+}
+impl<_T1> string_len<_T1> for _T1 {
+    fn string_len(self) -> usize
+    where
+        _T1: Display,
+    {
+        format!("{self}").len()
+    }
+}
+
+trait sorted_by<T> {
+    fn sorted_by<F>(self, dummy1: F) -> Vec<T>
+    where
+        F: FnMut(&T, &T) -> Ordering,
+        T: Ord;
+}
+impl<T> sorted_by<T> for Vec<T> {
+    fn sorted_by<F>(mut self, compare: F) -> Vec<T>
+    where
+        F: FnMut(&T, &T) -> Ordering,
+        T: Ord,
+    {
+        self.sort_by(compare);
+        self
+    }
+}
+
+fn main() {
+    assert_eq!(6.factorial(), 720);
+    assert_eq!(true.string_len(), 4);
+    assert_eq!(vec![2, 1, 3].sorted_by(|a, b| b.cmp(a)), vec![3, 2, 1]);
+}
+```
+</details>
+
+## Supported Function Signatures
+
+A list of all supported function signatures can be found [here](tests/compiles.rs).
 
 ## Prior Art
 
