@@ -107,21 +107,16 @@ fn expand(attr: TokenStream, input: TokenStream) -> Result<TokenStream> {
     let mut declaration = function.sig.clone();
 
     // remove patterns from param names in the trait method declaration
-    declaration
-        .inputs
-        .iter_mut()
-        .enumerate()
-        .for_each(|(index, arg)| match arg {
-            FnArg::Receiver(receiver) => {
-                if receiver.reference.is_none() {
-                    receiver.mutability = None;
-                }
+    declaration.inputs.iter_mut().for_each(|arg| match arg {
+        FnArg::Receiver(receiver) => {
+            if receiver.reference.is_none() {
+                receiver.mutability = None;
             }
-            FnArg::Typed(typed) => {
-                let ident = format_ident!("dummy{index}");
-                typed.pat = parse_quote!(#ident)
-            }
-        });
+        }
+        FnArg::Typed(typed) => {
+            typed.pat = parse_quote!(_);
+        }
+    });
 
     let trait_name = format_ident!("{}", function.sig.ident.to_string());
 
