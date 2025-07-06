@@ -2,7 +2,7 @@
 #![allow(clippy::needless_doctest_main)]
 
 use proc_macro2::{Span, TokenStream};
-use quote::{ToTokens, format_ident, quote};
+use quote::{format_ident, quote, ToTokens};
 use std::mem;
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
@@ -10,9 +10,9 @@ use syn::token::Comma;
 use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
 use syn::{
-    Error, FnArg, GenericParam, Generics, ItemFn, Lifetime, PredicateLifetime, PredicateType,
-    Receiver, Result, Type, TypeArray, TypeParam, TypePath, Visibility, WhereClause,
-    WherePredicate, parse_quote, visit, visit_mut,
+    parse_quote, visit, visit_mut, Error, FnArg, GenericParam, Generics, ItemFn, Lifetime,
+    PredicateLifetime, PredicateType, Receiver, Result, Type, TypeArray, TypeParam, TypePath,
+    Visibility, WhereClause, WherePredicate,
 };
 
 /// Converts a regular function into an extension function.
