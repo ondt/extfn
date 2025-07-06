@@ -1,7 +1,8 @@
 [package]
 name = "extfn"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+rust-version = "1.72"
 categories = ["rust-patterns"]
 keywords = ["macro", "trait", "extension", "extension-functions"]
 description = "Call any freestanding function as `a.foo(b)` instead of `foo(a, b)` just by adding `#[extfn]` and renaming the first parameter to `self`."
@@ -23,6 +24,6 @@ include = [
 proc-macro = true
 
 [dependencies]
-syn = { version = "2.0.101", features = ["full", "extra-traits", "printing", "visit-mut", "visit"] }
-proc-macro2 = "1.0.95"
-quote = "1.0.40"
+syn = { version = "2.0", features = ["full", "extra-traits", "printing", "visit-mut", "visit"] }
+proc-macro2 = "1.0"
+quote = "1.0"
