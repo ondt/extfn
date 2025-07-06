@@ -9,14 +9,15 @@ description = "Call any freestanding function as `a.foo(b)` instead of `foo(a, b
 repository = "https://github.com/ondt/extfn"
 homepage = "https://github.com/ondt/extfn"
 documentation = "https://docs.rs/extfn"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 readme = "README.md"
 include = [
 	"examples/demo.rs",
 	"src/lib.rs",
 	"tests/signatures.rs",
 	"Cargo.toml",
-	"LICENSE",
+	"LICENSE-APACHE",
+	"LICENSE-MIT",
 	"README.md",
 ]
 
