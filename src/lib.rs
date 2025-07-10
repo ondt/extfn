@@ -10,9 +10,9 @@ use syn::token::Comma;
 use syn::visit::Visit;
 use syn::visit_mut::VisitMut;
 use syn::{
-    parse_quote, visit, visit_mut, Error, FnArg, GenericParam, Generics, ItemFn, Lifetime,
-    PredicateLifetime, PredicateType, Receiver, Result, Type, TypeArray, TypeParam, TypePath,
-    Visibility, WhereClause, WherePredicate,
+    parse_quote, visit, visit_mut, AttrStyle, Error, FnArg, GenericParam, Generics, ItemFn,
+    Lifetime, Meta, PredicateLifetime, PredicateType, Receiver, Result, Type, TypeArray, TypeParam,
+    TypePath, Visibility, WhereClause, WherePredicate,
 };
 
 /// Converts a regular function into an extension function.
@@ -122,8 +122,20 @@ fn expand(attr: TokenStream, input: TokenStream) -> Result<TokenStream> {
 
     let (impl_generics, ty_generics, _where_clause) = generics.split_for_impl();
 
+    // filter out doc attributes
+    let docs = function
+        .attrs
+        .iter()
+        .filter(|attr| {
+            attr.style == AttrStyle::Outer
+                && matches!(&attr.meta, Meta::NameValue(meta) if meta.path == parse_quote!(doc))
+        })
+        .collect::<Vec<_>>();
+
     let expanded = quote! {
+        #(#docs)*
         #vis trait #trait_name #impl_generics {
+            #(#docs)*
             #[allow(async_fn_in_trait, unknown_lints, allow_attributes)]
             #declaration;
         }
