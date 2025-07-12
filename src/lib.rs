@@ -124,6 +124,7 @@ fn expand(attr: TokenStream, input: TokenStream) -> Result<TokenStream> {
 
     let expanded = quote! {
         #vis trait #trait_name #impl_generics {
+            #[allow(async_fn_in_trait, unknown_lints, allow_attributes)]
             #declaration;
         }
 
