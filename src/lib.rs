@@ -136,7 +136,7 @@ fn expand(attr: TokenStream, input: TokenStream) -> Result<TokenStream> {
         #(#docs)*
         #vis trait #trait_name #impl_generics {
             #(#docs)*
-            #[allow(async_fn_in_trait, unknown_lints, allow_attributes)]
+            #[allow(async_fn_in_trait, unknown_lints, clippy::allow_attributes)]
             #declaration;
         }
 
